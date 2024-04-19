@@ -1,118 +1,126 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
-
-import React from 'react';
-import type {PropsWithChildren} from 'react';
+// App.tsx
+import React, {useEffect, useState} from 'react';
 import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
   View,
+  Text,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  FlatList,
+  StyleSheet,
 } from 'react-native';
-
+import {useNetInfo} from '@react-native-community/netinfo';
 import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+  addTask,
+  getTasks,
+  clearTasks,
+  deleteTask,
+  updateTask,
+} from './utils/realm';
+import {Task, TaskSchema} from './schemas/TaskSchema';
 
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
+const App = () => {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [newTask, setNewTask] = useState('');
+  const {isConnected} = useNetInfo();
 
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
+  useEffect(() => {
+    const fetchAndStoreData = async () => {
+      try {
+        clearTasks();
+        const response = await fetch(
+          'https://jsonplaceholder.typicode.com/todos',
+        );
+        const data = await response.json();
+        data.forEach(
+          (task: {id: number; title: string; completed: boolean}) => {
+            addTask(task.id, task.title, task.completed);
           },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-}
+        );
+        setTasks(getTasks());
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
 
-function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
+    if (isConnected) {
+      // If connected to the internet, sync data with server
+      fetchAndStoreData();
+    } else {
+      // If offline, use local data from Realm
+      setTasks(getTasks());
+    }
+  }, [isConnected]);
 
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+  const handleAdd = () => {
+    const lastId = tasks[tasks.length - 1].id;
+    addTask(lastId + 1, newTask, false);
+    setTasks(getTasks());
   };
 
-  return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+  const handleRemove = (id: number) => {
+    deleteTask(id);
+    setTasks(getTasks());
+  };
+
+  const handleEdit = (id: number) => {
+    updateTask(id, {completed: true});
+    setTasks(getTasks());
+  };
+
+  const renderTask = ({item: task}: {item: Task}) => (
+    <View style={{alignItems: 'center', marginBottom: 8}}>
+      <Text>{task.title}</Text>
+      <Text>Status: {task.completed ? 'Completed' : 'To Do'}</Text>
+      <View style={{flexDirection: 'row'}}>
+        <TouchableOpacity
+          style={styles.btn}
+          onPress={() => handleRemove(task.id)}>
+          <Text>Remove</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.btn}
+          onPress={() => handleEdit(task.id)}>
+          <Text>Mark as Complete</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
-}
+  return (
+    <ScrollView>
+      <View style={styles.container}>
+        <View style={{flexDirection: 'row', marginVertical: 20}}>
+          <TextInput
+            value={newTask}
+            onChangeText={text => setNewTask(text)}
+            style={{height: 36, width: '70%', borderWidth: 1}}
+          />
+
+          <TouchableOpacity
+            style={{borderWidth: 1, padding: 8, alignItems: 'center'}}
+            onPress={handleAdd}>
+            <Text>Add</Text>
+          </TouchableOpacity>
+        </View>
+        <Text>Tasks:</Text>
+        <FlatList
+          data={tasks}
+          renderItem={renderTask}
+          keyExtractor={item => item.id.toString()}
+        />
+      </View>
+    </ScrollView>
+  );
+};
 
 const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 12,
   },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
-  },
+  btn: {borderWidth: 1, padding: 4, alignItems: 'center'},
 });
 
 export default App;
