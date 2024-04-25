@@ -1,115 +1,78 @@
 // App.tsx
-import React, {useEffect, useState} from 'react';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
 import {
-  View,
-  Text,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
-  FlatList,
+  SafeAreaView,
   StyleSheet,
+  Text,
+  TouchableOpacity
 } from 'react-native';
-import {useNetInfo} from '@react-native-community/netinfo';
-import {
-  addTask,
-  getTasks,
-  clearTasks,
-  deleteTask,
-  updateTask,
-} from './utils/realm';
-import {Task, TaskSchema} from './schemas/TaskSchema';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
+import SelectField from './utils/src/NewSelect';
+import FormInput from './utils/src/components/FormInput';
 
 const App = () => {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [newTask, setNewTask] = useState('');
-  const {isConnected} = useNetInfo();
+  const {control, handleSubmit} = useForm({
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      team: {label: '', value: ''}
+    },
+  });
+  console.log('render');
+  const teams = [
+    { label: "Hawks", value: "ATL" },
+    { label: "Celtics", value: "BOS" },]
+  const [selectedTeam, setSelectedTeam] = useState<string[]>([]);
+  const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
 
-  useEffect(() => {
-    const fetchAndStoreData = async () => {
-      try {
-        clearTasks();
-        const response = await fetch(
-          'https://jsonplaceholder.typicode.com/todos',
-        );
-        const data = await response.json();
-        data.forEach(
-          (task: {id: number; title: string; completed: boolean}) => {
-            addTask(task.id, task.title, task.completed);
-          },
-        );
-        setTasks(getTasks());
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
-
-    if (isConnected) {
-      // If connected to the internet, sync data with server
-      fetchAndStoreData();
-    } else {
-      // If offline, use local data from Realm
-      setTasks(getTasks());
-    }
-  }, [isConnected]);
-
-  const handleAdd = () => {
-    const lastId = tasks[tasks.length - 1].id;
-    addTask(lastId + 1, newTask, false);
-    setTasks(getTasks());
+  const onSubmit = (data: any) => {
+    console.log(data, 'data');
   };
 
-  const handleRemove = (id: number) => {
-    deleteTask(id);
-    setTasks(getTasks());
-  };
-
-  const handleEdit = (id: number) => {
-    updateTask(id, {completed: true});
-    setTasks(getTasks());
-  };
-
-  const renderTask = ({item: task}: {item: Task}) => (
-    <View style={{alignItems: 'center', marginBottom: 8}}>
-      <Text>{task.title}</Text>
-      <Text>Status: {task.completed ? 'Completed' : 'To Do'}</Text>
-      <View style={{flexDirection: 'row'}}>
-        <TouchableOpacity
-          style={styles.btn}
-          onPress={() => handleRemove(task.id)}>
-          <Text>Remove</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.btn}
-          onPress={() => handleEdit(task.id)}>
-          <Text>Mark as Complete</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
   return (
-    <ScrollView>
-      <View style={styles.container}>
-        <View style={{flexDirection: 'row', marginVertical: 20}}>
-          <TextInput
-            value={newTask}
-            onChangeText={text => setNewTask(text)}
-            style={{height: 36, width: '70%', borderWidth: 1}}
-          />
+      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+    <GestureHandlerRootView style={{flex: 1}}>
+    <BottomSheetModalProvider>
 
-          <TouchableOpacity
-            style={{borderWidth: 1, padding: 8, alignItems: 'center'}}
-            onPress={handleAdd}>
-            <Text>Add</Text>
-          </TouchableOpacity>
-        </View>
-        <Text>Tasks:</Text>
-        <FlatList
-          data={tasks}
-          renderItem={renderTask}
-          keyExtractor={item => item.id.toString()}
+      <SafeAreaView style={{padding: 12}}>
+        <FormInput
+          name="firstName"
+          label="First Name"
+          control={control}
+          required
         />
-      </View>
-    </ScrollView>
+        <FormInput
+          name="lastName"
+          label="Last Name"
+          control={control}
+          required
+        />
+        {/* <FormSelect
+          name="gender"
+          label="Gender"
+          control={control}
+          options={options}
+          required
+        /> */}
+        <SelectField
+        name="team"
+        control={control}
+        options={teams}
+      />
+        <TouchableOpacity
+          style={styles.btn}
+          onPress={handleSubmit(onSubmit)}>
+          <Text>Submit</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+
+      </BottomSheetModalProvider>
+
+    </GestureHandlerRootView>
+      </SafeAreaProvider>
   );
 };
 
@@ -120,7 +83,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
   },
-  btn: {borderWidth: 1, padding: 4, alignItems: 'center'},
+  btn: {
+    borderWidth: 1,
+    padding: 6,
+    height: 40,
+    marginTop: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
 
 export default App;
