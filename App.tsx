@@ -25,8 +25,6 @@ const App = () => {
   const teams = [
     { label: "Hawks", value: "ATL" },
     { label: "Celtics", value: "BOS" },]
-  const [selectedTeam, setSelectedTeam] = useState<string[]>([]);
-  const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
 
   const onSubmit = (data: any) => {
     console.log(data, 'data');
