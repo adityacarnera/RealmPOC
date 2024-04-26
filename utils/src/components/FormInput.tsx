@@ -17,7 +17,7 @@ export default function FormInput({
   return (
     <>
     <Text>{label}</Text>
-    <View style={{borderWidth: 1, marginBottom: 12}}>
+    <View style={{borderWidth: 1, marginBottom: 12, height: 55, paddingHorizontal: 12, justifyContent: 'center'}}>
 <TextInput
       value={field.value ? `${field.value}` : ``}
       onChangeText={(text)=>(field.onChange(text))}
