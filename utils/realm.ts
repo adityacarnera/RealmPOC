@@ -1,55 +1,66 @@
 // // realm.ts
-import Realm from 'realm';
-import { TaskSchema, Task } from '../schemas/TaskSchema';
-
+import Realm, {BSON} from 'realm';
+import {schemas} from '../src/schemas';
+import {SafetyAudit} from '../src/schemas/SafetyAuditSchema';
 
 const databaseOptions: Realm.Configuration = {
-  path: 'realmCRUD.realm',
-  schema: [TaskSchema],
+  path: 'realmSafetyAudit.realm',
+  schema: schemas,
   schemaVersion: 0,
 };
 
 const realm = new Realm(databaseOptions);
 
-export const addTask = (id: number, title: string, completed = false): void => {
+export const addSafetyAudit = (
+  auditDate: string,
+  note: string,
+  auditBy: string,
+  coAuditor1: string,
+  coAuditor2: string,
+): void => {
   realm.write(() => {
-    realm.create<Task>('Task', {
-      id: id,
-      title,
-      completed,
+    realm.create<SafetyAudit>('SafetyAudit', {
+      _id: new BSON.ObjectId(),
+      auditDate,
+      note,
+      auditBy,
+      coAuditor1,
+      coAuditor2,
     });
   });
 };
 
-export const getTasks = (): any => {
-  return realm.objects<Task>('Task');
+export const getSafetyAudits = (): any => {
+  return realm.objects<SafetyAudit>('SafetyAudit');
 };
 
-export const updateTask = (taskId: number, newData: Partial<Task>): void => {
-  const task = realm.objectForPrimaryKey<Task>('Task', taskId);  
-
-  if (task) {
-    realm.write(() => {
-      Object.keys(newData).forEach((key) => {
-        (task as any)[key] = newData[key];
-      });
-    });
-  } else {
-    console.error(`Task with ID ${taskId} not found.`);
-  }
-};
-
-
-export const deleteTask = (taskId: number): void => {
-  const task = realm.objectForPrimaryKey<Task>('Task', taskId);
+export const deleteSafetyAudit = (id: BSON.ObjectId): void => {
+  const safetyAudit = realm.objectForPrimaryKey<SafetyAudit>('SafetyAudit', id);
   realm.write(() => {
-    realm.delete(task);
+    realm.delete(safetyAudit);
   });
 };
 
-export const clearTasks = (): void => {
-    realm.write(() => {
-      const allTasks = realm.objects<Task>('Task');
-      realm.delete(allTasks);
-    });
-  };
+// export const updateTask = (
+//   taskId: number,
+//   newData: Partial<SafetyAudit>,
+// ): void => {
+//   const task = realm.objectForPrimaryKey<SafetyAudit>('SafetyAudit', taskId);
+
+//   if (task) {
+//     realm.write(() => {
+//       Object.keys(newData).forEach(key => {
+//         (task as any)[key] = newData[key];
+//       });
+//     });
+//   } else {
+//     console.error(`SafetyAudit with ID ${taskId} not found.`);
+//   }
+// };
+
+// export const clearTasks = (): void => {
+//   realm.write(() => {
+//     const allTasks = realm.objects<SafetyAudit>('SafetyAudit');
+//     realm.delete(allTasks);
+//   });
+// };

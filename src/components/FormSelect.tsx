@@ -13,15 +13,17 @@ import { Text, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
   
   export interface SelectFieldProps {
-    options: {label: string; value: string}[];
+    options: {label: string; value: number|string}[];
     control: any;
-    name: string
+    name: string;
+    label: string;
+    required?: boolean
   }
   
   const SelectField = (props: SelectFieldProps) => {
-    const {options = [], name, control} = props;
+    const {options = [], name, control, label, required} = props;
     const sheet = useRef<BottomSheetModal>(null);
-    const { field } = useController({ control, name });
+    const { field } = useController({ control, name, rules: {required: required} });
 
     const [bottomSheetIndex, setBottomSheetIndex] = useState<number>(-1);
   
@@ -58,7 +60,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
   
     return (
       <>
-        <TouchableOpacity activeOpacity={1} onPress={handleOpenSheet} style={{borderWidth: 1, height: 55,justifyContent: 'center', paddingHorizontal: 20}}>
+        <Text style={{marginBottom: 4}}>{label}</Text>
+        <TouchableOpacity activeOpacity={1} onPress={handleOpenSheet} style={{borderWidth: 1, height: 50,justifyContent: 'center', paddingHorizontal: 12}}>
             <Text>{field.value?.label ?? ''}</Text>
         </TouchableOpacity>
   
@@ -72,7 +75,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
           <BottomSheetFlatList
             style={{marginBottom: bottom + 0}}
             data={options}
-            keyExtractor={o => o.value}
+            keyExtractor={o => o.value.toString()}
             renderItem={({item, index}) => (
               <TouchableOpacity
                 key={index}
@@ -80,7 +83,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
                   field.onChange(item);
                   handleCloseSheet();
                 }}
-                style={{padding: 20, backgroundColor: 'red'}}>
+                style={{padding: 20}}>
                 <Text>{item.label}</Text>
               </TouchableOpacity>
             )}
